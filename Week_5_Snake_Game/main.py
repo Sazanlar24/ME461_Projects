@@ -23,7 +23,9 @@ def main():
         gameEngine.draw_grid()
 
         # Draw food
-        gameEngine.draw_food(food_position[0],  food_position[1])
+        #gameEngine.draw_food(food_position[0],  food_position[1])
+        gameEngine.snake.move()
+        gameEngine.draw_snake()
 
         # Update the display
         pygame.display.flip()
@@ -31,6 +33,7 @@ def main():
         time.sleep(1)
         seconds += 1
         print(f"Seconds: {seconds}")
+
         
 if __name__ == "__main__":
     main()
