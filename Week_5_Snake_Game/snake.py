@@ -10,9 +10,12 @@ class Snake:
         self.alive = True
         self.number = player_index
         self.points = 0
+        
         self.heading = "down"
         self.head_location = (6, 12)
+        
         self.location_list = [self.head_location]
+        self.length = len(self.location_list)
         
         self.head_color = (0, 0, 0) # black
         self.body_color = COLORS[player_index]
@@ -45,6 +48,12 @@ class Snake:
 
         # yeni lokasyon listesi
         self.location_list = [self.head_location] + self.location_list[:len(self.location_list) - 1]    
+
+    def applyTargetChange(self):
+        self.points += 1    # yenen targeta göre değişebilir
+        self.length += 1
+
+        # uzunluğu nasıl artacak
 
     def die(self):
         self.alive = False

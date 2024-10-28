@@ -3,6 +3,7 @@ import sys
 
 from grid import Grid
 from snake import Snake
+from target import Target
 
 class Engine():
     def __init__(self):
@@ -12,18 +13,27 @@ class Engine():
 
         self.gameGrid = Grid(row_number=10, column_number=20)
         self.snake = Snake(0, self.gameGrid)
+        self.target = Target(self.gameGrid)
 
         # Create the window
         self.screen = pygame.display.set_mode((self.gameGrid.screen_width, self.gameGrid.screen_height))
         pygame.display.set_caption("Snake Game Grid")
         
-    def draw_food(self, row, column):
+    def draw_target(self):
         red_color = (255, 0, 0)
-        pygame.draw.rect(
+        if self.target.alive:
+            pygame.draw.rect(
             self.screen, 
             red_color, 
-            (column * self.gameGrid.grid_size, row * self.gameGrid.grid_size, self.gameGrid.grid_size, self.gameGrid.grid_size)
+            (self.target.column * self.gameGrid.grid_size, self.target.row * self.gameGrid.grid_size, self.gameGrid.grid_size, self.gameGrid.grid_size)
             )
+
+            self.target.check_eaten(self.snake)
+
+        else:
+            self.target.spawn_random()
+        
+        
 
     def draw_grid(self):
         for x in range(0, self.gameGrid.screen_width, self.gameGrid.grid_size):

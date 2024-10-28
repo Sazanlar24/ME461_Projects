@@ -1,7 +1,7 @@
 import pygame, sys, time
 from game_engine import Engine
 
-food_position  = (2, 5)  # row=2, column=5
+food_position  = (1, 1)  # row=2, column=5
 seconds = 0
 
 def main():
@@ -15,25 +15,34 @@ def main():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            elif event.type == pygame.KEYDOWN:
+                # Change snake heading based on arrow key pressed
+                if event.key == pygame.K_UP:
+                    if gameEngine.snake.heading != "down":
+                        gameEngine.snake.heading = "up"  
+                elif event.key == pygame.K_DOWN:
+                    if gameEngine.snake.heading != "up":
+                        gameEngine.snake.heading = "down"  
+                elif event.key == pygame.K_LEFT:
+                    if gameEngine.snake.heading != "right":
+                        gameEngine.snake.heading = "left"  
+                elif event.key == pygame.K_RIGHT:
+                    if gameEngine.snake.heading != "left":
+                        gameEngine.snake.heading = "right"
 
         # Fill the background
         gameEngine.screen.fill(gameEngine.gameGrid.background_color)
 
-        # Draw the grid
+        
         gameEngine.draw_grid()
-
-        # Draw food
-        #gameEngine.draw_food(food_position[0],  food_position[1])
         gameEngine.snake.move()
-        gameEngine.draw_snake()
+        gameEngine.draw_target()
+        gameEngine.draw_snake()        
 
         # Update the display
         pygame.display.flip()
 
-        time.sleep(1)
-        seconds += 1
-        print(f"Seconds: {seconds}")
-
+        time.sleep(0.2) # 2 hz
         
 if __name__ == "__main__":
     main()
