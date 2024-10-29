@@ -36,6 +36,7 @@ def main():
         
         gameEngine.draw_grid()
         gameEngine.snake.move()
+        gameEngine.snake.checkEatenByItself()
         gameEngine.draw_target()
         gameEngine.draw_snake()        
 

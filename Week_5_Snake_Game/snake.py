@@ -1,6 +1,6 @@
 COLORS = [
+    (0, 255, 0),    # Greens
     (255, 0, 0),    # Red
-    (0, 255, 0),    # Green
     (255, 255, 0),  # Yellow    
     (0, 0, 255)     # Blue
 ]
@@ -53,7 +53,17 @@ class Snake:
         self.points += 1    # yenen targeta göre değişebilir
         self.length += 1
 
+        tail = self.location_list[-1]
+        self.location_list.append(tail)  # Adds a new part to the end of the snake's body
         # uzunluğu nasıl artacak
 
     def die(self):
         self.alive = False
+
+    def checkEatenByItself(self):
+
+        for location in self.location_list[1:]:
+            if location == self.head_location:
+                print("kendini yedi")
+                self.alive = False
+                break

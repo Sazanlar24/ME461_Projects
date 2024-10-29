@@ -33,8 +33,6 @@ class Engine():
         else:
             self.target.spawn_random()
         
-        
-
     def draw_grid(self):
         for x in range(0, self.gameGrid.screen_width, self.gameGrid.grid_size):
             for y in range(0, self.gameGrid.screen_height, self.gameGrid.grid_size):
@@ -42,24 +40,25 @@ class Engine():
                 pygame.draw.rect(self.screen, self.gameGrid.grid_color, rect, 1)
 
     def draw_snake(self):
-        
-        # HEAD
-        pygame.draw.rect(
-            self.screen, 
-            self.snake.head_color, 
-            (self.snake.location_list[0][1] * self.gameGrid.grid_size, 
-             self.snake.location_list[0][0] * self.gameGrid.grid_size, 
-             self.gameGrid.grid_size, 
-             self.gameGrid.grid_size)
-            )
 
-        # BODY
-        for location in self.snake.location_list[1:]:
+        if self.snake.alive:
+            # HEAD
             pygame.draw.rect(
                 self.screen, 
-                self.snake.body_color, 
-                (location[1] * self.gameGrid.grid_size, 
-                 location[0] * self.gameGrid.grid_size, 
-                 self.gameGrid.grid_size, 
-                 self.gameGrid.grid_size)
+                self.snake.head_color, 
+                (self.snake.location_list[0][1] * self.gameGrid.grid_size, 
+                self.snake.location_list[0][0] * self.gameGrid.grid_size, 
+                self.gameGrid.grid_size, 
+                self.gameGrid.grid_size)
                 )
+
+            # BODY
+            for location in self.snake.location_list[1:]:
+                pygame.draw.rect(
+                    self.screen, 
+                    self.snake.body_color, 
+                    (location[1] * self.gameGrid.grid_size, 
+                    location[0] * self.gameGrid.grid_size, 
+                    self.gameGrid.grid_size, 
+                    self.gameGrid.grid_size)
+                    )
