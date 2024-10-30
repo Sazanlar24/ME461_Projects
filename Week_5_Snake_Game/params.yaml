@@ -1,0 +1,15 @@
+serviceNode : 
+    ros_parameters: 
+        grid_dimensions: [30, 20]
+        tick_speed: 0.1
+        crash: False 
+
+
+# This part will be added to __init__ function of the service node: 
+self.declare_parameters(
+    namespace = '',
+    parameters=[
+    (grid_dimensions, rclpy.Parameter.Type.INTEGER_ARRAY),
+    (tick_speed, rclpy.Parameter.Type.DOUBLE),
+    (crash, rclpy.Parameter.Type.BOOL),
+    ])
