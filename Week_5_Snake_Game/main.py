@@ -43,7 +43,7 @@ def main():
         # Update the display
         pygame.display.flip()
 
-        time.sleep(0.2) # 2 hz
+        time.sleep(0.1) # 2 hz
         
 if __name__ == "__main__":
     main()
