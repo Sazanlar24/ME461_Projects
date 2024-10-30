@@ -1,9 +1,11 @@
 import pygame
 import sys
+import random
 
 from grid import Grid
 from snake import Snake
 from target import Target
+
 
 class Engine():
     def __init__(self):
@@ -20,11 +22,10 @@ class Engine():
         pygame.display.set_caption("Snake Game Grid")
         
     def draw_target(self):
-        red_color = (255, 0, 0)
         if self.target.alive:
             pygame.draw.rect(
             self.screen, 
-            red_color, 
+            self.target.color, 
             (self.target.column * self.gameGrid.grid_size, self.target.row * self.gameGrid.grid_size, self.gameGrid.grid_size, self.gameGrid.grid_size)
             )
 
