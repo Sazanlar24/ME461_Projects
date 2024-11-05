@@ -5,7 +5,7 @@ from rclpy.node import Node
 import pygame
 import sys
 import random
-from tutorial_interfaces.msg import Position, Direction
+from tutorial_interfaces.msg import Position, Direction, Target
 
 class Grid:
     def __init__(self, row_number, column_number):
@@ -34,7 +34,7 @@ class Snake:
         self.head_location = (6, 12)
         self.location_list = [self.head_location]
         self.body_color = self.COLORS[player_id]
-        self.head_color = (0, 128, 128)  # Color for the head
+        self.head_color = self.COLORS[player_id]
         self.wait = 0  # Initialize wait time
         self.nontouch = 0  # Initialize untouchable time
 
@@ -43,8 +43,7 @@ class Snake:
         if self.wait > 0: 
             self.wait -= 1
             return
-
-        if self.heading == "right":
+        elif self.heading == "right":
             self.head_location = (self.head_location[0], self.head_location[1] + 1)  # Move right
         elif self.heading == "left":
             self.head_location = (self.head_location[0], self.head_location[1] - 1)  # Move left
@@ -64,10 +63,23 @@ class Snake:
 
     def apply_target_change(self, point):     
         self.points += point
-        self.length += 1
+        self.length += point
 
         tail = self.location_list[-1]
-        self.location_list.append(tail)  # Adds a new part to the end of the snake's body
+        if point == 1:
+            self.location_list.append(tail)  # Adds a new part to the end of the snake's body
+        elif point == 3:
+            self.location_list.append(tail)  # Adds a new part to the end of the snake's body
+            self.location_list.append(tail)  # Adds a new part to the end of the snake's body
+            self.location_list.append(tail)  # Adds a new part to the end of the snake's body
+        if not len(tail) == True:
+            if point == -1:
+                self.location_list.pop()
+        if len(tail) > 3:
+            if point == -3:
+                self.location_list.pop()
+                self.location_list.pop()
+                self.location_list.pop()
 
     def check_eaten_by_itself(self):
         if self.nontouch > 0: 
@@ -85,7 +97,10 @@ class Target:
         '+1': (128, 128, 0), 
         '+3': (255, 255, 0), 
         '-1': (0, 128, 128), 
-        '-3': (0, 255, 255),
+        '-3': (0, 255, 255), 
+    }
+
+    joker_colors = {
         'freeze': (0, 0, 255), 
         'untouchable': (255, 255, 255)
     }
@@ -96,8 +111,14 @@ class Target:
         self.color = None
         self.row = None
         self.column = None
+        self.featuret = None
+        self.colort = None
+        self.rowt = None
+        self.columnt = None
         self.alive = False   
+        self.alivet = False
         self.spawn_random() 
+        self.spawn_joker()
 
     def spawn_random(self):
         self.row    = random.randint(0, self.grid.rows - 1)
@@ -105,17 +126,27 @@ class Target:
         self.feature, self.color = random.choice(list(self.target_colors.items()))
         self.alive = True
 
+    def spawn_joker(self):
+        self.rowt    = random.randint(0, self.grid.rows - 1)
+        self.columnt = random.randint(0, self.grid.columns - 1)
+        self.featuret, self.colort = random.choice(list(self.joker_colors.items()))
+        self.alivet = True
+
     def check_eaten(self, snake):
         if snake.head_location == (self.row, self.column):
             self.alive = False
             if self.feature in ['+1', '-1', '+3', '-3']: 
                 point = int(self.feature)
                 snake.apply_target_change(point) 
-            elif self.feature == 'freeze':
-                snake.wait = 5
-            elif self.feature == 'untouchable':
-                snake.nontouch = 10
             self.spawn_random()  # Spawn a new target
+        if (self.rowt, self.columnt) != (self.row, self.column):
+            if snake.head_location == (self.rowt, self.columnt):
+                self.alivet = False
+                if self.featuret == 'freeze':
+                    snake.wait = 10
+                elif self.featuret == 'untouchable':
+                    snake.nontouch = 20
+                self.spawn_joker()
             
 class GameEngine:
     def __init__(self, screen):
@@ -139,6 +170,18 @@ class GameEngine:
             self.target.check_eaten(self.snake)
         else:
             self.target.spawn_random()
+        
+        if self.target.alivet:
+            pygame.draw.rect(
+                self.screen, 
+                self.target.colort, 
+                (self.target.columnt * self.grid.grid_size, 
+                 self.target.rowt * self.grid.grid_size, 
+                 self.grid.grid_size, 
+                 self.grid.grid_size)
+            )
+        else: 
+            self.target.spawn_joker()
 
     def draw_grid(self):
         for x in range(0, self.grid.screen_width, self.grid.grid_size):
