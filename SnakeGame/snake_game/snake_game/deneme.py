@@ -5,6 +5,8 @@ from rclpy.node import Node
 import pygame
 import sys
 import random
+import math
+import time
 from tutorial_interfaces.msg import Position, Direction, Target
 
 class Grid:
@@ -94,15 +96,21 @@ class Snake:
 
 class Target:
     target_colors = {
-        '+1': (128, 128, 0), 
-        '+3': (255, 255, 0), 
-        '-1': (0, 128, 128), 
-        '-3': (0, 255, 255), 
+        '+1': (128, 128, 0),  # olive
+        '+3': (255, 255, 0),  # yellow
+        '-1': (0, 128, 128),  # teal
+        '-3': (128, 0, 128)   # purple
     }
 
     joker_colors = {
         'freeze': (0, 0, 255), 
         'untouchable': (255, 255, 255)
+    }
+
+    shapes = {
+        "circle",
+        "triangle",
+        "pentagon"
     }
     
     def __init__(self, grid):
@@ -117,20 +125,25 @@ class Target:
         self.columnt = None
         self.alive = False   
         self.alivet = False
+        self.special_spawn_time = None
+        self.food_spawn_time = None
         self.spawn_random() 
-        self.spawn_joker()
+        self.spawn_joker()        
 
     def spawn_random(self):
         self.row    = random.randint(0, self.grid.rows - 1)
         self.column = random.randint(0, self.grid.columns - 1)
         self.feature, self.color = random.choice(list(self.target_colors.items()))
         self.alive = True
+        self.shape = random.choice(list(self.shapes))
+        self.food_spawn_time = time.time()
 
     def spawn_joker(self):
         self.rowt    = random.randint(0, self.grid.rows - 1)
         self.columnt = random.randint(0, self.grid.columns - 1)
         self.featuret, self.colort = random.choice(list(self.joker_colors.items()))
         self.alivet = True
+        self.special_spawn_time = time.time()
 
     def check_eaten(self, snake):
         if snake.head_location == (self.row, self.column):
@@ -147,6 +160,10 @@ class Target:
                 elif self.featuret == 'untouchable':
                     snake.nontouch = 20
                 self.spawn_joker()
+        if (time.time() - self.special_spawn_time) > 5:
+            self.alivet = False
+        if (time.time() - self.food_spawn_time) > 10:
+            self.alive = False
             
 class GameEngine:
     def __init__(self, screen):
@@ -157,20 +174,36 @@ class GameEngine:
         self.target = Target(self.grid)
         self.screen = screen
 
+        self.special_spawn_time = None
+
     def draw_target(self):
         if self.target.alive:
-            pygame.draw.rect(
-                self.screen, 
-                self.target.color, 
-                (self.target.column * self.grid.grid_size, 
-                 self.target.row * self.grid.grid_size, 
-                 self.grid.grid_size, 
-                 self.grid.grid_size)
-            )
+            
+            orta_x = self.target.column * self.grid.grid_size + self.grid.grid_size / 2
+            orta_y = self.target.row * self.grid.grid_size + self.grid.grid_size / 2
+
+            if self.target.shape == "circle":
+                pygame.draw.circle(self.screen, self.target.color, (orta_x, orta_y), 20)
+
+            elif self.target.shape == "triangle":
+                point1 = (orta_x - 15, orta_y - 20)
+                point2 = (orta_x - 15, orta_y + 20)
+                point3 = (orta_x + 20, orta_y)
+                pygame.draw.polygon(self.screen, self.target.color, [point1, point2, point3])
+            
+            elif self.target.shape == "pentagon":
+                corners = []
+                for i in range(5):
+                    angle = 2 * math.pi * i / 5  # Angle in radians
+                    x = orta_x + 20 * math.cos(angle)
+                    y = orta_y + 20 * math.sin(angle)
+                    corners.append((x, y))
+                pygame.draw.polygon(self.screen, self.target.color, corners)
+
             self.target.check_eaten(self.snake)
         else:
             self.target.spawn_random()
-        
+
         if self.target.alivet:
             pygame.draw.rect(
                 self.screen, 

@@ -12,6 +12,7 @@
   <depend>sys</depend>
   <depend>time</depend>
   <depend>random</depend>
+  <depend>math</depend>
   <depend>grid</depend>
   <depend>snake</depend>
   <depend>target</depend>
