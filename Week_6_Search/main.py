@@ -1,7 +1,7 @@
 import pygame
 from grid import Grid
 
-def SearchSnakeP1(nWidth = 10, nHeight = 10, nObjects = 20):
+def SearchSnakeP1(nWidth = 15, nHeight = 9, nObjects = 25):
 
     if nWidth > 0 and nHeight > 0:
         myGrid = Grid(nWidth, nHeight, nObjects)
@@ -17,7 +17,9 @@ def SearchSnakeP1(nWidth = 10, nHeight = 10, nObjects = 20):
         myGrid.draw_objects()
 
         if myGrid.ready_for_search:
-            # SEARCH KODU BAŞLANGIÇ NOKTASI
+            # Trigger the DFS search
+            myGrid.start_search()
+            myGrid.ready_for_search = False  # Prevent re-triggering the search on subsequent frames
             pass
         
         state = myGrid.event_handler()    
