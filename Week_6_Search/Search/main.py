@@ -1,7 +1,7 @@
 import pygame
-from grid_dfs import Grid
+from grid import Grid
 
-def Depth_First(nWidth = 15, nHeight = 9, nObjects = 25):
+def Snake_Search(nWidth = 15, nHeight = 9, nObjects = 25):
 
     if nWidth > 0 and nHeight > 0:
         myGrid = Grid(nWidth, nHeight, nObjects)
@@ -12,12 +12,10 @@ def Depth_First(nWidth = 15, nHeight = 9, nObjects = 25):
     running = True
 
     while running:
-        myGrid.screen.fill(myGrid.BLACK)
         myGrid.draw_grid()
         myGrid.draw_objects()
 
         if myGrid.ready_for_search:
-            # Trigger the DFS search
             myGrid.start_search()
             myGrid.ready_for_search = False  # Prevent re-triggering the search on subsequent frames
             pass
@@ -34,4 +32,4 @@ def Depth_First(nWidth = 15, nHeight = 9, nObjects = 25):
 
 if __name__ == "__main__":
 
-    Depth_First()
+    Snake_Search()

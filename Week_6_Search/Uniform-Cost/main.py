@@ -1,5 +1,5 @@
 import pygame
-from grid_dfs import Grid
+from grid import Grid
 
 def Depth_First(nWidth = 15, nHeight = 9, nObjects = 25):
 
