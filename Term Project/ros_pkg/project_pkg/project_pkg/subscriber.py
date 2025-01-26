@@ -53,12 +53,15 @@ class Subscriber(Node):
         self.number_of_seconds    = 0
         self.current_target_index = 0
 
-        # game_control topic string
-        self.robot_state = ""
+        # game_control topic string (start, pause, resume, stop)
+        self.robot_state = "" 
+
+        
+        self.remanining_time = 0
 
         self.group_name = "SAZAN"
+        
         self.current_cell = 0
-
         self.next_cell_to_move = 0
 
     def listener_callback_cell_values(self, msg):
@@ -76,7 +79,7 @@ class Subscriber(Node):
         #self.get_logger().info(f'Received on topic2: "{msg.data}"')
 
         str = msg.data.replace(" ", "")  # erases empty characters
-        list = str.split("")
+        list = str.split(",")
         int1 = list[0]
         int2 = list[1]
 
@@ -140,3 +143,27 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+
+"""
+TODO GENEL:
+
+1. robotun motorları kontrol edilecek
+2. neopixel motora takılacak
+3. pico ile bilgisayar arasında bağlantı denemeleri yapılacak
+
+SADECE 1. GÖREV İÇİN GEÇERLİ!!
+
+robot açıldığında bilgisayarla bağlanana kadar --> LEDs1 should blink RED
+bağlandıktan sonra --> LEDs1 solid GREEN
+
+4. terminal üzerinden robota paket (50cm düz, 90 derece ccw gibi) gönderip motor kontrolü
+5. grid'i ve robotu tanıyan image processing kodu
+6. tanınan robot konumu GUI'ye gönderilip orada gösterilecek (sürekli devam etmeli)
+7. robot konumu bulununca --> LEDs2 turn solid GREEN
+8. GUI'den seçilen target ile robotun konumu arasında plan yapılacak
+9. plan yaparken -->  LEDs2 solid BLUE
+10. plan yapıldıktan sonra bu planın robota iletilmesi, planın takip edilmesi ve --> LEDs2 blinking RED.
+11. plandaki bir sonraki kare farklı bir renk ile GUI'de gösterilmeli (sürekli devam etmeli)
+12. robot tam sınırdayken --> LEDs1 rapid blink GREEN, eğer kare içindeyse tekrar --> LEDs2 turn solid GREEN
+13. robot target'a ulaştıysa GUI mesaj vermeli -->  LEDs2 turn solid WHITE
+"""
