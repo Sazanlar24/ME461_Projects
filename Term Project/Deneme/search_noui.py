@@ -44,6 +44,7 @@ if __name__ == "__main__":
 
     start = tuple(map(int, input("Enter start point (row, col): ").split(',')))
     end = tuple(map(int, input("Enter end point (row, col): ").split(',')))
+    print(grid)
 
     result = find_max_points(grid, start, end)
     print(f"Maximum Points Collected: {result['score']}")

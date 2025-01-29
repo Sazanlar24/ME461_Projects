@@ -10,12 +10,19 @@ move2target topic'inden string alacak, kaydedecek.
 TODO: plan yapacak, ve bu planı PİCO'ya anlatabilecek koda (90 derece dön, şu kadar ileri vs.) çevirecek, gönderecek
 """
 
-import time
+import time, socket
 import rclpy, random
 from rclpy.node import Node
 from std_msgs.msg import String, Int16
 
 from project_pkg.planner import plan_path
+from project_pkg.new_planner import find_max_points
+
+HOST = '192.168.4.1'
+PORT = 8080
+
+R = 5
+C = 8
 
 class ROS_Image_Processing(Node):
     def __init__(self):
@@ -23,8 +30,9 @@ class ROS_Image_Processing(Node):
         self.publisher_my_position  = self.create_publisher(String, 'my_position', 10)
         self.publisher_my_target    = self.create_publisher(String, 'my_target', 10)  
         self.publisher_total_points = self.create_publisher(Int16, 'total_points', 10) 
+        self.publisher_expected_path_and_score = self.create_publisher(String, 'expected_path_and_score', 10) 
   
-        self.robot_location  = 0  #şu anki konum            # TODO: ANLIK DEĞİŞMELİ
+        self.robot_location  = 40  #şu anki konum            # TODO: ANLIK DEĞİŞMELİ
         self.target_location = 0  #bir sonraki target cell  # TODO: ANLIK DEĞİŞMELİ
 
         self.timer_my_position  = self.create_timer(1.0, self.publish_my_position)
@@ -41,6 +49,9 @@ class ROS_Image_Processing(Node):
 
         self.total_seconds = 0
         self.selected_target = 0
+
+        self.plan_string = ""
+        self.expected_score = 0
 
         self.remaining_time = 0
 
@@ -67,6 +78,32 @@ class ROS_Image_Processing(Node):
             10
         )
 
+        """
+        try:
+            # Connect to the Pico W server
+            self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.client.connect((HOST, PORT))
+            print(f"Connected to {HOST}:{PORT}")
+        except socket.error as e:
+            print(f"Failed to connect to {HOST}:{PORT}. Error: {e}")
+            exit(1)  # Exit the program if the connection fails"""
+
+    def sendPico(self, message:str):
+        print(f'Message sent: {message}')
+        # Validate the message before sending (optional, implement as needed)
+        if not message.strip():
+            print("Empty message. Please enter a valid command.")
+
+        # Send data to the server
+        self.client.sendall(message.encode())
+        print("Message sent to pico.")
+
+    def publish_path_and_expected_points(self):
+        msg = String()
+        msg.data = self.plan_string + ": " + str(self.expected_score)
+        self.publisher_expected_path_and_score.publish(msg)
+        self.get_logger().info(f'Found plan and score is published: "{msg.data}"')
+
     def publish_my_position(self):
         msg = String()
         msg.data = self.group_name + ", " + str(self.robot_location)
@@ -91,41 +128,71 @@ class ROS_Image_Processing(Node):
     def listener_callback_cell_values(self, msg):
         #self.get_logger().info(f'Received on cell_values topic: "{msg.data}"')
         
-        str = msg.data.replace(" ", "")  # erases empty characters
-        list = str.split(",")        
+        string = msg.data.replace(" ", "")  # erases empty characters
+        list = string.split(",")        
 
         new_values = [int(x) for x in list]
         self.cell_values = new_values
         print(self.cell_values)
-        print(type(self.cell_values))
+
+        self.grid = [self.cell_values[i * C:(i + 1) * C] for i in range(R)]
         
         print("New points list is arrived!")    
         # TODO: it should blink LEDs1 GREEN
 
     def listener_callback_move2target(self, msg):
         self.get_logger().info(f'Received on cell_values topic: "{msg.data}"')
-        str = msg.data.replace(" ", "")  # erases empty characters
+        string = msg.data.replace(" ", "")  # erases empty characters
 
-        seconds, target = str.split(",")
+        seconds, target = string.split(",")
         
         # if new target is arrived
         if target != self.selected_target:
             self.total_seconds, self.selected_target = seconds, target
+            self.selected_target = int(self.selected_target)
             self.new_path_is_found = False 
 
         # path is not known (either no target is arrived yet, or target is changed)
         if self.new_path_is_found is False:
-            """
-            TODO: burdaki planner düzeltilmeli
-            TODO: During planning LEDs1 will be solid BLUE
-            result = plan_path(self.cell_values, self.robot_location, self.selected_target, 15) # TODO: süreye göre adım dönüşler daha uzun sürer aslında
-            print("Maximum Points:", result[0])
-            print("Best Path:", result[1])
-            self.new_path_is_found = True
+
+            #TODO: During planning LEDs1 will be solid BLUE
+            try:
+                result = find_max_points(self.grid, self.robot_location, self.selected_target)
+                expected_score = result['score']
+                found_path = result['path']
+
+                print(f"Maximum Points Collected: {expected_score}")
+                print("Path Taken:", found_path)
+                
+                if expected_score > 0:
+                    self.expected_score = expected_score
+                    self.new_path_is_found = True
+                    plan_string = ""
+
+                for point in result["path"]:
+                    cell_number=point[0]*C+point[1]+1
+                    plan_string += str(cell_number)
+                    plan_string += ","
+
+                # Remove the trailing comma
+                self.plan_string = plan_string.rstrip(',')
+                
+                print(f"plan string: {self.plan_string}")
+                print("plan is done")
+
+                print(self.plan_string)
+                print(self.expected_score)
+                
+            except:
+                print("Some variables are missing or plan cannot be found: (cell_values, robot_location, selected_target)")
+
+            
+            publisher_node.publish_path_and_expected_points()
+
+            """"
             TODO: After planning, LEDs1 will blink GREEN but faster
             TODO: yapılan planı ve alınması planlanan puanı ayrı bir topic'e gönder
             """
-            print("plan is done")
 
     def listener_callback_game_control(self, msg):
         self.game_control_string = msg.data.upper()

@@ -13,7 +13,9 @@ from PyQt6.QtWidgets import QGraphicsScene
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(725, 360)
+        MainWindow.resize(725, 380)
+        MainWindow.setFixedSize(725, 380)
+
         self.centralwidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.groupBox = QtWidgets.QGroupBox(parent=self.centralwidget)
@@ -140,6 +142,17 @@ class Ui_MainWindow(object):
         self.pushButton = QtWidgets.QPushButton(parent=self.groupBox_4)
         self.pushButton.setGeometry(QtCore.QRect(0, 70, 231, 17))
         self.pushButton.setObjectName("pushButton")
+
+        self.label_expected_points = QtWidgets.QLabel(parent=self.centralwidget)
+        self.label_expected_points.setGeometry(QtCore.QRect(380, 330, 131, 21))
+        self.label_expected_points.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.label_expected_points.setObjectName("label_expected_points")
+
+        self.label_total_points = QtWidgets.QLabel(parent=self.centralwidget)
+        self.label_total_points.setGeometry(QtCore.QRect(550, 330, 131, 21))
+        self.label_total_points.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.label_total_points.setObjectName("label_total_points")
+
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(parent=MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 725, 18))
@@ -154,6 +167,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
+        self.translate = _translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.radioButton.setText(_translate("MainWindow", "START"))
         self.radioButton_2.setText(_translate("MainWindow", "PAUSE"))
@@ -163,3 +177,6 @@ class Ui_MainWindow(object):
         self.label_3.setText(_translate("MainWindow", "Target"))
         self.label_5.setText(_translate("MainWindow", "Base"))
         self.pushButton.setText(_translate("MainWindow", "Send"))
+
+        self.label_expected_points.setText(_translate("MainWindow", "Expected Points: 0"))
+        self.label_total_points.setText(_translate("MainWindow", "Total Points: 0"))

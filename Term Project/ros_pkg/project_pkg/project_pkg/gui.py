@@ -13,12 +13,11 @@ from project_pkg.planner import plan_path
 HOST = '192.168.4.1'
 PORT = 8080
 
-#client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#client.connect((HOST, PORT))
+buttons = []
 
 class Publisher(Node):
     def __init__(self):
-        super().__init__('publisher')  # Name of the node
+        super().__init__('GUI_node')  # Name of the node
         self.publisher_cell_values  = self.create_publisher(String, 'cell_values', 10)  
         self.publisher_move2target  = self.create_publisher(String, 'move2target', 10)  
         self.publisher_game_control = self.create_publisher(String, 'game_control', 10)   
@@ -32,6 +31,7 @@ class Publisher(Node):
         
         self.cell_value_string = ""
         self.game_control_string = ""
+        self.expected_points = 0
         
         self.total_seconds   = 0
 
@@ -41,6 +41,30 @@ class Publisher(Node):
             self.timer_total_points_callback,
             10
         )
+    
+        self.subscription2 = self.create_subscription(
+            String,
+            'expected_path_and_score',
+            self.expected_path_and_score_callback,
+            10
+        )
+
+        self.subscription2 = self.create_subscription(
+            String,
+            'my_position',
+            self.my_position_callback,
+            10
+        )
+
+        """
+        try:
+            # Connect to the Pico W server
+            self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self.client.connect((HOST, PORT))
+            print(f"Connected to {HOST}:{PORT}")
+        except socket.error as e:
+            print(f"Failed to connect to {HOST}:{PORT}. Error: {e}")
+            exit(1)  # Exit the program if the connection fails"""
         
     def publish_cell_values(self):
         msg = String()
@@ -56,35 +80,98 @@ class Publisher(Node):
 
     def timer_total_points_callback(self, msg):
         self.get_logger().info(f'Total points received by GUI: "{msg.data}"')
+        self.total_points = int(msg.data)
+        total_point_label.setText(_translate("MainWindow", "Total Points: " + str(self.total_points)))
+
+    def expected_path_and_score_callback(self, msg):
+        my_list = msg.data.split(":")
+
+        path_string = my_list[0].strip()
+        expected_points = my_list[1].strip()
+
+        # if new expected point is arrived
+        if self.expected_points != int(expected_points): 
+            expected_point_label.setText(_translate("MainWindow", "Expected Points: " + str(int(expected_points))))
+            self.expected_set = True
+
+        self.expected_points = int(expected_points)
+
+        points_to_go = path_string.split(",")
+        points_to_go = list(map(int, points_to_go)) # convert string integers into integers
+
+        for i in range(1, len(points_to_go)-1):
+            button = buttons[points_to_go[i]]
+            self.buttonColor(button, "yellow")
+
+        print("path is received by GUI")
+        print(path_string)
+        print(expected_points)    
+        print("Expected points is received: ", self.expected_points)
+
+    def my_position_callback(self, msg):
+        group_name, robot_location_string = msg.data.split(",")
+        self.group_name = group_name
+        self.robot_location = int(robot_location_string)
+
+        print("Robot location is received by GUI: ", self.robot_location)
+
+        if (0 < self.robot_location < 41):
+            button_robot = buttons[self.robot_location]
+            self.buttonColor(button_robot, "red")
 
     def publish_move2target(self):
         msg = String()
         msg.data = f"{self.total_seconds},{self.selected_target}"
         self.publisher_move2target.publish(msg)
         self.get_logger().info(f'Move2target numbers are published: "{msg.data}"')
-        #TODO: gitmek için plan yap
         self.cell_value_list = list(map(int, self.cell_value_list))
 
-        result = plan_path(self.cell_value_list, self.robot_location, self.selected_target, 15) # TODO: süreye göre adım dönüşler daha uzun sürer aslında
-        print("Maximum Points:", result[0])
-        print("Best Path:", result[1])
+    def sendPico(self, message:str):
+
+        print(f'Message sent: {message}')
+        # Validate the message before sending (optional, implement as needed)
+        if not message.strip():
+            print("Empty message. Please enter a valid command.")
+
+        # Send data to the server
+        self.client.sendall(message.encode())
+        print("Message sent to pico.")
+
+        # Receive and process the response
+        """
+        while True:
+            try:
+                response = publisher_node.client.recv(1024)
+                if not response:
+                    print("No response received. Server might have disconnected.")
+                print("Received from Pico:", response.decode())
+            except socket.error as e:
+                print(f"Error receiving data: {e}")
+
+            except Exception as e:
+                print(f"An error occurred: {e}")
+
+            return response.decode()"""
+        
+    def buttonColor(self, buttonObject: object, color: str):
+        buttonObject.setStyleSheet(f"background-color: {color}")
 
 
 class Window(QMainWindow, Ui_MainWindow):
     def __init__(self):
+        global buttons, expected_point_label, total_point_label, _translate
         super().__init__()
         self.setupUi(self)
         self.init_vars()
 
+        buttons = self.buttons
+        expected_point_label = self.label_expected_points
+        total_point_label = self.label_total_points
+        _translate = self.translate
+
         self.pushButton.clicked.connect(self.textHandler)
         for i in range(1,len(self.buttons)+1): self.buttons[i].clicked.connect(self.clickHandler)
         for button in self.radioButtons: button.clicked.connect(self.radioHandler)
-            
-    def sendPico(self, message:str):
-        client.sendall(message.encode()) 
-        response = client.recv(1024)
-        print("Received from Pico:", response.decode())
-        return response.decode()
 
     def setDisplay(self, textOrImage:str, textOrPath:str):
         self.scene.clear()
@@ -129,7 +216,7 @@ class Window(QMainWindow, Ui_MainWindow):
                 
                 string = ""
                 while len(cellValues) > 1:
-                    number = random.choice(cellValues)
+                    number = cellValues[0]
                     string += str(number)
                     string += ","
                     cellValues.remove(number)
@@ -142,7 +229,7 @@ class Window(QMainWindow, Ui_MainWindow):
         
         elif text[:4] == 'pico': 
             message = text[5:]
-            self.sendPico(message)  
+            publisher_node.sendPico(message)  
 
         elif text[:7] == 'seconds':
             publisher_node.total_seconds = int(text[8:])
@@ -192,7 +279,5 @@ def main(args=None):
     # Shut down the ROS2 node and clean up
     publisher_node.destroy_node()
     rclpy.shutdown()
-    client.close()
-
-# TODO: total_point topic'inden gelen bilgiyi ekranda göstermek için yeni label eklenmeli
-# TODO: plan ve alınması planlanan puan topic'e yayınlandıktan sonra onu al göster, 
+    publisher_node.client.close()
+    print("pico connection is stopped")
