@@ -33,8 +33,10 @@ def find_max_points(grid: list, start: int, end: int, time_limit: float):
                 if new_time <= time_limit:
                     new_points = current_points + grid[nx][ny]
                     heapq.heappush(pq, (-new_points, new_time, nx, ny, direction, path + [(nx, ny)]))
+
+    best_path_indices = [(r * C + c + 1) for r, c in best_path]
     
-    return {"score": max_score, "path": best_path}
+    return {"score": max_score, "path": best_path_indices}
 
 # Example Usage
 grid = [
