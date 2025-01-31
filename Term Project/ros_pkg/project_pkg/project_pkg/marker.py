@@ -31,10 +31,12 @@ class ROS_Image_Processing(Node):
         self.timer_my_position  = self.create_timer(1.0, self.publish_my_position)
         self.timer_my_target    = self.create_timer(1.0, self.publish_my_target)
         self.timer_total_points = self.create_timer(1.0, self.publish_total_points)  # Add timer for total_points
+        self.timer_game_controller = self.create_timer(1.0, self.game_controller)
         
         self.counter_my_position  = 0 
-        self.counter_total_points = 0 
         self.counter_my_target = 0 
+        self.counter_total_points = 0 
+        self.counter_game_controller = 0
 
         self.group_name = "sazanlar"
         self.cell_values = [] 
@@ -53,6 +55,7 @@ class ROS_Image_Processing(Node):
         self.remaining_time = 0
         
         self.robot_state = None
+        self.robot_thread = None  # Thread for handling robot movement
 
         self.subscription1 = self.create_subscription(
             String,
@@ -127,6 +130,108 @@ class ROS_Image_Processing(Node):
         #self.get_logger().info(f'Total_points is published: "{msg.data}"')
         self.counter_total_points += 1
 
+    def listener_callback_game_control(self, msg):
+        new_state = msg.data.upper()
+        print("New control string received:", new_state)
+
+        if new_state in ["START", "PAUSE", "RESUME", "STOP"]:
+            self.robot_state = new_state
+
+            # Start movement thread only if it's a new START command
+            if new_state == "START" and (self.robot_thread is None or not self.robot_thread.is_alive()):
+                self.robot_thread = threading.Thread(target=self.run_robot_logic)
+                self.robot_thread.start()
+
+    def game_controller(self):
+        if self.robot_state is None:
+            print("Waiting for a game control command...")
+
+    def run_robot_logic(self):
+        """Runs robot logic in a separate thread, continuously checking robot_state."""
+        while True:
+            if self.robot_state == "START":
+                print("Hedefe gidiyorum...")
+                time.sleep(1)
+                self.start_string()
+            
+            elif self.robot_state == "PAUSE":
+                print("Durduruldum...")
+                # TODO: STOP motors
+                # TODO: take note of the remaining time
+                # TODO: LEDs1 should blink RED
+                time.sleep(1)
+            
+            elif self.robot_state == "RESUME":
+                print("Devam ediyorum...")
+                # initiate new timer_service with the remaining time
+                time.sleep(1)
+                self.start_string()
+            
+            elif self.robot_state == "STOP":
+                print("Durdum bekliyorum....")
+                # TODO: Motorları durdur
+                # TODO: terminate tasks: remaining_time sıfırla, new_path sıfırla vs.
+                # self.sendPico("PIX:1,0,red") # set LEDs1 solid RED
+                break  # Exit the thread when STOP is received
+
+            time.sleep(0.1)  # Small sleep to avoid excessive CPU usage
+
+    def start_string(self):
+        # TODO: LEDs1 turn into solid WHITE
+        # self.sendPico("PIX:1,0,white")
+        # timer_service should be initiated
+        # robot should start moving.
+
+        # start a countdown from self.total_seconds if start
+        # if pause, continue from remaining time
+        # send remaining time into a topic, GUI will receive it and show
+        # if time is up, stop the robot
+
+        i = 0
+        while self.robot_state in ["START", "RESUME"]:
+            
+            print("while'in içindeyim")            
+
+            while True:
+                try:
+                    next_cell = self.new_path[0]
+                except:
+                    print("yeni path gelmemiş...")
+
+                print(f"aradaki açı farkına bakıyorum: {i}...")
+                angle_threshold = 5
+                aci_fark = 5 - 3
+                if aci_fark > angle_threshold:
+                    print("motorlara ccw mesajı gönderdim..")
+                elif aci_fark < -angle_threshold:
+                    print("motorlara cw mesajı gönderdim..")
+                else:
+                    print("bir sonraki cell için dönmeye gerek yok...")
+                    print("motorlara durma mesajı gönderdim..")
+                    break
+        
+            while True:
+
+                distance_threshold = 10
+                uzaklik_fark = 7 - 2
+
+                if uzaklik_fark > distance_threshold:
+                    print("motorlara düz gitme mesajı verdim..")
+                else:
+                    print("robot hedefe vardı..")
+                    try:
+                        self.new_path.pop(0)
+                    except:
+                        print("olmadi..")
+
+                    print("bir sonraki hedefe geçiliyor...")
+                    i+=1
+                    break
+            
+            if len(self.new_path) == 0:
+                print("target'a ulaşıldı")
+                self.robot_state = "STOP"
+
     def listener_callback_cell_values(self, msg):
         #self.get_logger().info(f'Received on cell_values topic: "{msg.data}"')
         
@@ -147,8 +252,7 @@ class ROS_Image_Processing(Node):
         while not self.target_received:
             self.sendPico("PIX:1,1,green") # set LEDs1 green for 1 seconds
             time.sleep(2)                  # sleep 2 seconds
-        """
-            
+        """ 
 
     def listener_callback_move2target(self, msg):
         self.get_logger().info(f'Received on move2target topic: "{msg.data}"')
@@ -210,75 +314,11 @@ class ROS_Image_Processing(Node):
             except:
                 print("Some variables are missing or plan cannot be found: (cell_values, robot_location, selected_target)")
 
-            
             publisher_node.publish_path_and_expected_points()
 
             """"
             TODO: After planning, LEDs1 will blink GREEN but faster
             """
-
-    def listener_callback_game_control(self, msg):
-        self.game_control_string = msg.data.upper()
-        print("New control string is received: ", self.game_control_string)
-
-        if self.game_control_string == "START":
-            self.robot_state = "START"
-            # TODO: LEDs1 turn into solid WHITE
-            #self.sendPico("PIX:1,0,white")
-            # timer_service should be initiated
-            # robot should start moving.
-
-            #while len(self.new_path) > 0 and self.robot_state=="START":
-            while self.robot_state=="START":
-                
-                #time.sleep(1)
-                print("pathe doğru gidiyorum.....")
-
-                #next_cell = self.new_path[0]
-                # yeni açı bul
-                # anlik açıya bak
-                # fark kadar dön
-                # düz git
-                #self.new_path.remove(0)
-
-            # start a countdown from --self.number_of_seconds--
-            # TODO: bir topic'e kalan zamanı gönder
-
-            pass
-        elif self.game_control_string == "PAUSE":
-            self.robot_state = "PAUSE"
-            self.get_logger().info("Robot state set to PAUSE")
-            while self.robot_state == "PAUSE":
-                self.get_logger().info("Paused...")
-                rclpy.spin_once(self, timeout_sec=0.1)  # Process new messages
-                time.sleep(1)  # Sleep to avoid busy-waiting
-            # TODO: robot should pause
-            # wait for resume or stop
-            # take note of the remaining time
-            # LEDs1 should blink RED
-            pass
-        elif self.game_control_string == "RESUME":
-            if self.robot_state == "PAUSE": # if robot is paused before
-                self.robot_state = "RESUME"
-                while self.robot_state == "RESUME":
-                    print("onceden pause'dum, şimdi resume oldum...")
-                    time.sleep(1)
-                # TODO: continue executing the existing plan
-                # set LEDs1 solid WHITE
-                # initiate new timer_service with the remaining time
-                pass
-            else:
-                pass # discard
-        elif self.game_control_string == "STOP":
-            self.robot_state = "STOP"
-            while self.robot_state == "STOP":
-                print("durdum..")
-                time.sleep(1)
-            # TODO: terminate tasks
-            #self.sendPico("PIX:1,0,red") # set LEDs1 solid RED
-            pass
-        else:
-            pass
 
 class GridProcessor:
     def __init__(self, video_path):

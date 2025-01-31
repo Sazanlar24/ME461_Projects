@@ -23,7 +23,8 @@ setup(
             'publisher  = project_pkg.publisher:main',
             'subscriber = project_pkg.subscriber:main',
             'gui = project_pkg.gui:main',
-            'image_processing = project_pkg.image_processing:main',  
+            'image_processing = project_pkg.image_processing:main',
+            'marker = project_pkg.marker:main',  
         ],
     },
 )

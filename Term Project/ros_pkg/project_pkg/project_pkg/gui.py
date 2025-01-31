@@ -24,6 +24,7 @@ class Publisher(Node):
         
         self.group_name = "sazanlar"
         self.robot_location  = 0  #su anki konum       # TODO: ANLIK DEĞİŞMELİ
+        self.prev_location = 0
         self.target_location = 1  #bir sonraki konum       # TODO: ANLIK DEĞİŞMELİ
         self.selected_target = 0
         
@@ -79,7 +80,7 @@ class Publisher(Node):
         self.get_logger().info(f'Game control string is published: "{msg.data}"')
 
     def timer_total_points_callback(self, msg):
-        self.get_logger().info(f'Total points received by GUI: "{msg.data}"')
+        #self.get_logger().info(f'Total points received by GUI: "{msg.data}"')
         self.total_points = int(msg.data)
         total_point_label.setText(_translate("MainWindow", "Total Points: " + str(self.total_points)))
 
@@ -103,21 +104,31 @@ class Publisher(Node):
             button = buttons[points_to_go[i]]
             self.buttonColor(button, "yellow")
 
-        print("path is received by GUI")
-        print(path_string)
-        print(expected_points)    
-        print("Expected points is received: ", self.expected_points)
+        print("New path is received by GUI", path_string)
+        #print(expected_points)    
+        #print("Expected points is received: ", self.expected_points)
 
     def my_position_callback(self, msg):
         group_name, robot_location_string = msg.data.split(",")
         self.group_name = group_name
-        self.robot_location = int(robot_location_string)
-
-        print("Robot location is received by GUI: ", self.robot_location)
+        robot_location_string = robot_location_string.strip()
+        
+        if robot_location_string == "None":
+            self.robot_location = self.prev_location
+        else:
+            self.prev_location = self.robot_location
+            self.robot_location = int(robot_location_string)
+        
+        #print("Robot location is received by GUI: ", self.robot_location)
 
         if (0 < self.robot_location < 41):
-            button_robot = buttons[self.robot_location]
-            self.buttonColor(button_robot, "red")
+            try:
+                button_robot = buttons[self.robot_location]
+                button_prev  = buttons[self.prev_location]
+                self.buttonColor(button_prev, "white")
+                self.buttonColor(button_robot, "red")
+            except:
+                pass
 
     def publish_move2target(self):
         msg = String()
@@ -127,15 +138,13 @@ class Publisher(Node):
         self.cell_value_list = list(map(int, self.cell_value_list))
 
     def sendPico(self, message:str):
-
-        print(f'Message sent: {message}')
         # Validate the message before sending (optional, implement as needed)
         if not message.strip():
             print("Empty message. Please enter a valid command.")
 
         # Send data to the server
         self.client.sendall(message.encode())
-        print("Message sent to pico.")
+        print(f'Message sent to pico: {message}')
 
         # Receive and process the response
         """
@@ -156,7 +165,6 @@ class Publisher(Node):
     def buttonColor(self, buttonObject: object, color: str):
         buttonObject.setStyleSheet(f"background-color: {color}")
 
-
 class Window(QMainWindow, Ui_MainWindow):
     def __init__(self):
         global buttons, expected_point_label, total_point_label, _translate
@@ -168,6 +176,7 @@ class Window(QMainWindow, Ui_MainWindow):
         expected_point_label = self.label_expected_points
         total_point_label = self.label_total_points
         _translate = self.translate
+        self.button_target = None
 
         self.pushButton.clicked.connect(self.textHandler)
         for i in range(1,len(self.buttons)+1): self.buttons[i].clicked.connect(self.clickHandler)
@@ -186,21 +195,28 @@ class Window(QMainWindow, Ui_MainWindow):
 
     def radioHandler(self): 
         button = self.sender().objectName()
-        print(f'{button} clicked!')
+        #print(f'{button} clicked!')
         publisher_node.game_control_string = str(button)
         publisher_node.publish_game_control()
 
     def clickHandler(self):
+
+        if self.button_target != None:
+            self.buttonColor(self.button_target,'white')  
+            #print("Old target: ", self.button_target.objectName()[11:])  
+
+        self.button_target = self.sender()
+
         self.buttonColor(self.sender(),'green')
         buttonName = self.sender().objectName()
         #print(f'{buttonName} clicked!')
 
-        if publisher_node.selected_target == 0: # if target location is not set yet:
-            publisher_node.selected_target = buttonName[11:]
+        publisher_node.selected_target = buttonName[11:]
+        #print("New target: ", publisher_node.selected_target)
 
     def textHandler(self):
         text = self.textEdit.toPlainText()
-        print(f'Text sent: {text}')
+        #print(f'Text sent: {text}')
         # Assign cell values to map for visual purposes
         if text[:4] == 'path': 
             path = text[5:]
