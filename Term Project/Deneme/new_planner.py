@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
             result = find_max_points(grid, start, end)
             #print(f"Maximum Points Collected: {result['score']}")
-            #print("Path Taken:", result['path'])
+            print("Path Taken:", result['path'])
             #print("Length of the path: ", len(result['path']))
 
             if (len(result['path']) == 0):

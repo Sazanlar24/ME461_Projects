@@ -23,10 +23,10 @@ class Publisher(Node):
         self.publisher_game_control = self.create_publisher(String, 'game_control', 10)   
         
         self.group_name = "sazanlar"
-        self.robot_location  = 0  #su anki konum       # TODO: ANLIK DEĞİŞMELİ
-        self.prev_location = 0
-        self.target_location = 1  #bir sonraki konum       # TODO: ANLIK DEĞİŞMELİ
-        self.selected_target = 0
+        self.robot_location  = None  #su anki konum       # TODO: ANLIK DEĞİŞMELİ
+        self.prev_location   = None
+        self.target_location = None  #bir sonraki konum       # TODO: ANLIK DEĞİŞMELİ
+        self.selected_target = None
         
         self.cell_value_list = []
         
@@ -50,10 +50,17 @@ class Publisher(Node):
             10
         )
 
-        self.subscription2 = self.create_subscription(
+        self.subscription3 = self.create_subscription(
             String,
             'my_position',
             self.my_position_callback,
+            10
+        )
+
+        self.subscription4 = self.create_subscription(
+            String,
+            'my_target',
+            self.my_target_callback,
             10
         )
 
@@ -113,22 +120,61 @@ class Publisher(Node):
         self.group_name = group_name
         robot_location_string = robot_location_string.strip()
         
-        if robot_location_string == "None":
-            self.robot_location = self.prev_location
-        else:
-            self.prev_location = self.robot_location
-            self.robot_location = int(robot_location_string)
-        
-        #print("Robot location is received by GUI: ", self.robot_location)
+        # Ensure prev_location is always tracked correctly
+        prev_location = self.robot_location if hasattr(self, "robot_location") else None
 
-        if (0 < self.robot_location < 41):
-            try:
-                button_robot = buttons[self.robot_location]
-                button_prev  = buttons[self.prev_location]
-                self.buttonColor(button_prev, "white")
-                self.buttonColor(button_robot, "red")
-            except:
-                pass
+        if robot_location_string == "None":
+            self.robot_location = prev_location  # Keep previous location if None
+        else:
+            self.robot_location = int(robot_location_string)
+
+        # Ensure the new location is valid    
+        if self.robot_location != None:
+            if 0 < self.robot_location < 49:
+                try:
+                    button_robot = buttons[self.robot_location]
+
+                    # Reset the previous button if it exists
+                    if prev_location and 0 < prev_location < 49:
+                        button_prev = buttons[prev_location]
+                        self.buttonColor(button_prev, "white")
+
+                    # Set the new button to red
+                    self.buttonColor(button_robot, "red")
+
+                except KeyError:
+                    print(f"Invalid button index: {self.robot_location} or {prev_location}")
+
+    def my_target_callback(self, msg):
+        group_name, target_location_string = msg.data.split(",")
+        self.group_name = group_name
+        target_location_string = target_location_string.strip()
+
+        # Ensure prev_location is always tracked correctly
+        prev_target_location = self.target_location if hasattr(self, "robot_location") else None
+
+        if target_location_string == "None":
+            self.target_location_location = prev_target_location  # Keep previous location if None
+        else:
+            self.target_location = int(target_location_string)
+
+        # Ensure the new location is valid    
+        if self.target_location != None:
+            if 0 < self.target_location < 49:
+                try:
+                    button_target = buttons[self.target_location]
+
+                    # Reset the previous button if it exists
+                    if prev_target_location and 0 < prev_target_location < 49:
+                        button_prev_target = buttons[prev_target_location]
+                        self.buttonColor(button_prev_target, "white")
+
+                    # Set the new button to red
+                    self.buttonColor(button_target, "blue")
+        
+                except KeyError:
+                    print(f"Invalid button index: {self.target_location} or {prev_target_location}")
+
 
     def publish_move2target(self):
         msg = String()
@@ -145,22 +191,6 @@ class Publisher(Node):
         # Send data to the server
         self.client.sendall(message.encode())
         print(f'Message sent to pico: {message}')
-
-        # Receive and process the response
-        """
-        while True:
-            try:
-                response = publisher_node.client.recv(1024)
-                if not response:
-                    print("No response received. Server might have disconnected.")
-                print("Received from Pico:", response.decode())
-            except socket.error as e:
-                print(f"Error receiving data: {e}")
-
-            except Exception as e:
-                print(f"An error occurred: {e}")
-
-            return response.decode()"""
         
     def buttonColor(self, buttonObject: object, color: str):
         buttonObject.setStyleSheet(f"background-color: {color}")
@@ -258,17 +288,6 @@ class Window(QMainWindow, Ui_MainWindow):
         self.progressBar.setValue(0)
         for button in self.radioButtons: button.setChecked(False)
         self.setDisplay('image', '/home/me461/mnt/labs_ws/src/project_pkg/project_pkg/home.jpg')
-
-"""
-def main(args=None):
-    app = QApplication([])
-    window = Window()
-
-    window.show()
-    app.exec()
-    client.close()
-main()"""
-
 
 def main(args=None):
     global publisher_node
