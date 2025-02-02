@@ -15,16 +15,17 @@ def led_blink():
     ratio = 0.5
     
     if number == 'inf':
-            number = 1000
-    else: number = int(number)
+        numberLimit = 1
+    else: numberLimit = int(number)
     
-    while count < number :        
+    while count < numberLimit:        
         led.on() 
         utime.sleep(ratio*duration)  
         led.off()
         utime.sleep((1-ratio)*duration)
         
-        count += 1
+        if number != 'inf':
+            count += 1
 
 def heartbeat():
     count = 0
@@ -33,10 +34,10 @@ def heartbeat():
     freq = 100
     
     if number == 'inf':
-            number = 1000
-    else: number = int(number)
+        numberLimit = 1
+    else: numberLimit = int(number)
     
-    while count < number :        
+    while count < numberLimit:  
         ratio = 0.9
         cycle_time = duration/freq
         light_up = ratio*cycle_time
@@ -56,7 +57,8 @@ def heartbeat():
             led.on()
             utime.sleep(light_down-off_time)
     
-        count += 1
+        if number != 'inf':
+            count += 1
         
         
 def calculator():
